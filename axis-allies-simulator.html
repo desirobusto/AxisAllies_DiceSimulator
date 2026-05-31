@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axis & Allies Dice Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --parch1:#f0e4c4;--parch2:#dfc89a;--olive:#5a6428;--olive-dark:#3a4218;--brown:#3d2a0e;
+  --brown-light:#6b4a1e;--gold:#c8943a;--cream:#faf5e4;--hit-green:#2a6a2a;--miss-red:#8a1a1a;
+}
+body{
+  background:var(--parch1);
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 24px,rgba(90,100,40,0.07) 25px),
+                   repeating-linear-gradient(90deg,transparent,transparent 24px,rgba(90,100,40,0.05) 25px),
+                   linear-gradient(160deg,#f5dea8 0%,#e8cc8a 40%,#f0ddb0 70%,#dfc89a 100%);
+  font-family:'Oswald',sans-serif;color:var(--brown);min-height:100vh;
+}
+header{
+  background:var(--olive-dark);border-bottom:3px solid var(--gold);
+  padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 3px 8px rgba(0,0,0,0.4);
+}
+header h1{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:2.2rem;letter-spacing:3px;text-shadow:2px 2px 4px rgba(0,0,0,0.5)}
+#roundDisplay{color:var(--parch2);font-size:1.1rem;font-weight:500;letter-spacing:2px}
+.main-layout{display:flex;gap:12px;padding:12px;max-width:1600px;margin:0 auto;align-items:flex-start}
+.force-panel{
+  flex:1;background:var(--parch1);border:2px solid var(--brown);border-radius:4px;
+  box-shadow:3px 3px 8px rgba(61,42,14,0.3);overflow:hidden;
+}
+.force-header{
+  padding:10px 14px;border-bottom:2px solid var(--brown-light);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.force-title{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;color:var(--cream)}
+.nation-select,.edition-select{
+  background:var(--brown);color:var(--cream);border:1px solid var(--gold);
+  padding:4px 8px;font-family:'Oswald',sans-serif;font-size:0.85rem;border-radius:2px;cursor:pointer;
+}
+.nation-select:focus,.edition-select:focus{outline:2px solid var(--gold)}
+.edition-row{
+  padding:8px 14px;background:rgba(61,42,14,0.08);border-bottom:1px solid var(--brown-light);
+  display:flex;align-items:center;gap:8px;
+}
+.edition-label{font-size:0.85rem;font-weight:600;color:var(--brown)}
+.units-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:10px}
+.unit-card{
+  background:var(--cream);border:1px solid var(--brown-light);border-radius:3px;
+  padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  box-shadow:1px 1px 3px rgba(61,42,14,0.2);transition:border-color 0.2s;
+}
+.unit-card:hover{border-color:var(--gold)}
+.unit-icon-wrap{
+  width:60px;height:60px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(0,0,0,0.2);
+}
+.unit-name{font-family:'Oswald',sans-serif;font-size:0.72rem;font-weight:600;text-align:center;color:var(--brown);text-transform:uppercase;letter-spacing:0.5px}
+.unit-stats{font-size:0.7rem;color:var(--brown-light);text-align:center}
+.unit-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;min-height:14px}
+.tag{
+  font-size:0.55rem;padding:1px 3px;border-radius:2px;font-weight:600;text-transform:uppercase;
+  background:var(--olive);color:var(--cream);letter-spacing:0.3px;
+}
+.tag.sub{background:#1a4a6a}
+.tag.twohit{background:#6a1a1a}
+.tag.art{background:#6a4a1a}
+.counter-row{display:flex;align-items:center;gap:4px}
+.cnt-btn{
+  width:22px;height:22px;background:var(--olive-dark);color:var(--gold);border:1px solid var(--gold);
+  border-radius:2px;cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;
+  font-family:'Oswald',sans-serif;transition:background 0.15s;
+}
+.cnt-btn:hover{background:var(--gold);color:var(--brown)}
+.cnt-val{
+  width:28px;height:22px;text-align:center;background:var(--parch2);border:1px solid var(--brown-light);
+  font-family:'Oswald',sans-serif;font-size:0.9rem;color:var(--brown);font-weight:600;border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+}
+.expected-hits{
+  padding:8px 14px;background:rgba(90,100,40,0.1);border-top:1px solid var(--brown-light);
+  font-size:0.85rem;color:var(--brown);display:flex;gap:12px;flex-wrap:wrap;
+}
+.expected-hits span{font-weight:600}
+.losses-panel{
+  padding:8px 14px;border-top:2px solid var(--gold);background:rgba(61,42,14,0.05);
+}
+.losses-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:1px;color:var(--brown-light);margin-bottom:4px}
+.losses-list{display:flex;flex-wrap:wrap;gap:4px}
+.loss-item{font-size:0.75rem;color:var(--brown);background:var(--parch2);padding:2px 6px;border-radius:2px;border:1px solid var(--brown-light)}
+.loss-total{font-size:0.8rem;font-weight:600;color:var(--miss-red);margin-top:4px}
+.center-panel{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.ctrl-box{
+  background:var(--parch1);border:2px solid var(--brown);border-radius:4px;
+  padding:12px;box-shadow:3px 3px 8px rgba(61,42,14,0.3);
+}
+.ctrl-box h3{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1px;color:var(--olive-dark);margin-bottom:8px;text-align:center}
+.btn{
+  display:block;width:100%;padding:8px 12px;margin-bottom:6px;
+  font-family:'Oswald',sans-serif;font-size:0.9rem;font-weight:500;letter-spacing:1px;
+  border-radius:3px;cursor:pointer;text-align:center;text-transform:uppercase;
+  transition:all 0.15s;border:2px solid;
+}
+.btn-primary{background:var(--olive-dark);color:var(--gold);border-color:var(--gold)}
+.btn-primary:hover:not(:disabled){background:var(--olive);box-shadow:0 2px 5px rgba(0,0,0,0.3)}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed}
+.btn-secondary{background:var(--parch2);color:var(--brown);border-color:var(--brown-light)}
+.btn-secondary:hover:not(:disabled){background:var(--dfc89a);box-shadow:0 2px 5px rgba(0,0,0,0.2)}
+.btn-secondary:disabled{opacity:0.4;cursor:not-allowed}
+.btn-danger{background:#6a1a0a;color:var(--cream);border-color:#8a2a1a}
+.btn-danger:hover:not(:disabled){background:#8a2a1a}
+.btn-success{background:#2a5a1a;color:var(--cream);border-color:#3a7a2a}
+.btn-success:hover:not(:disabled){background:#3a7a2a}
+.btn-success:disabled{opacity:0.4;cursor:not-allowed}
+.stripe{height:4px;background:repeating-linear-gradient(90deg,var(--olive) 0px,var(--olive) 8px,var(--gold) 8px,var(--gold) 12px,var(--olive) 12px);margin:8px 0;border-radius:2px}
+.log-box{
+  background:var(--cream);border:2px solid var(--brown);border-radius:4px;
+  max-height:280px;overflow-y:auto;
+}
+.log-box h3{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:1px;color:var(--olive-dark);padding:6px 10px;border-bottom:1px solid var(--brown-light);background:var(--parch2)}
+.log-entry{padding:4px 10px;font-size:0.75rem;border-bottom:1px solid rgba(61,42,14,0.1);color:var(--brown)}
+.log-entry.round-header{font-weight:600;background:rgba(90,100,40,0.1);color:var(--olive-dark)}
+.log-entry.hit-line{color:var(--hit-green)}
+.log-entry.miss-line{color:var(--brown-light)}
+/* DICE */
+.dice-section{background:var(--parch2);border:2px solid var(--brown);border-radius:4px;padding:10px;margin-bottom:8px}
+.dice-section h4{font-family:'Bebas Neue',sans-serif;font-size:0.95rem;letter-spacing:1px;color:var(--olive-dark);margin-bottom:6px}
+.dice-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+.die{
+  width:34px;height:34px;background:var(--cream);border:2px solid var(--brown-light);
+  border-radius:5px;display:flex;align-items:center;justify-content:center;
+  font-family:'Oswald',sans-serif;font-size:1rem;font-weight:600;color:var(--brown);
+  box-shadow:1px 1px 3px rgba(0,0,0,0.2);position:relative;
+}
+.die.hit{background:#d4f0d4;border-color:var(--hit-green);color:var(--hit-green)}
+.die.miss{background:var(--cream);border-color:var(--brown-light);color:var(--brown-light)}
+/* CASUALTY SELECTION */
+.casualty-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(40,30,10,0.75);z-index:100;
+  display:flex;align-items:center;justify-content:center;
+}
+.casualty-box{
+  background:var(--parch1);border:3px solid var(--gold);border-radius:6px;
+  padding:20px;max-width:700px;width:95%;max-height:85vh;overflow-y:auto;
+  box-shadow:0 8px 30px rgba(0,0,0,0.6);
+}
+.casualty-box h2{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;color:var(--olive-dark);margin-bottom:4px}
+.casualty-instr{font-size:0.85rem;color:var(--brown-light);margin-bottom:10px}
+.token-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.token{
+  width:72px;height:72px;border-radius:4px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;cursor:pointer;border:2px solid rgba(0,0,0,0.25);
+  position:relative;transition:all 0.15s;user-select:none;
+}
+.token:hover{transform:scale(1.06);border-color:var(--gold)}
+.token.damaged{border-color:#c87820;border-width:3px}
+.token.dead{opacity:0.55}
+.token svg{width:44px;height:44px}
+.token-label{font-size:0.6rem;font-family:'Oswald',sans-serif;color:var(--cream);font-weight:500;text-align:center;margin-top:2px}
+.token-overlay{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  display:flex;align-items:center;justify-content:center;font-size:2rem;
+  border-radius:4px;pointer-events:none;
+}
+.token-overlay.dead-x{color:#ff3333;text-shadow:0 0 4px rgba(0,0,0,0.5)}
+.token-overlay.dmg-star{color:#ffcc00;text-shadow:0 0 4px rgba(0,0,0,0.5)}
+.hit-counter{
+  font-size:1rem;font-weight:600;color:var(--olive-dark);margin:8px 0;font-family:'Oswald',sans-serif;
+}
+/* POPUP */
+.popup-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(40,30,10,0.8);z-index:200;
+  display:flex;align-items:center;justify-content:center;
+}
+.popup-box{
+  background:var(--parch1);border:4px double var(--gold);border-radius:6px;
+  padding:30px;max-width:520px;width:90%;text-align:center;
+  box-shadow:0 10px 40px rgba(0,0,0,0.7);
+}
+.popup-box h2{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;color:var(--olive-dark);margin-bottom:10px}
+.popup-box p{font-size:0.95rem;color:var(--brown);margin-bottom:8px;line-height:1.5}
+.popup-box .result-table{font-size:0.85rem;margin:10px auto;border-collapse:collapse;width:100%}
+.popup-box .result-table td,.popup-box .result-table th{padding:5px 10px;border:1px solid var(--brown-light);text-align:left}
+.popup-box .result-table th{background:var(--olive-dark);color:var(--gold);font-family:'Oswald',sans-serif}
+.hidden{display:none}
+/* scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--parch2)}
+::-webkit-scrollbar-thumb{background:var(--brown-light);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Axis &amp; Allies Dice Simulator</h1>
+  <div id="roundDisplay">ROUND 1</div>
+</header>
+
+<!-- DICE RESULTS + CASUALTY PANELS inserted dynamically -->
+<div id="diceResultsArea" class="hidden" style="padding:8px 12px;max-width:1600px;margin:0 auto"></div>
+<div id="casualtyOverlay" class="casualty-overlay hidden"></div>
+<div id="victoryOverlay" class="popup-overlay hidden"></div>
+<div id="simResultsOverlay" class="popup-overlay hidden"></div>
+
+<div class="main-layout">
+  <!-- ATTACKER -->
+  <div class="force-panel" id="attackerPanel">
+    <div class="force-header" style="background:var(--olive-dark)">
+      <span class="force-title">ATTACKER</span>
+      <select id="attackerNation" class="nation-select" onchange="updateNationColor('attacker')"></select>
+    </div>
+    <div class="edition-row">
+      <span class="edition-label">Edition:</span>
+      <select id="editionSelect" class="edition-select" onchange="changeEdition()"></select>
+    </div>
+    <div id="attackerGrid" class="units-grid"></div>
+    <div class="expected-hits" id="attackerExpected">Expected Hits: <span>0.00</span></div>
+    <div class="losses-panel">
+      <div class="losses-title">Losses</div>
+      <div class="losses-list" id="attackerLossesList"></div>
+      <div class="loss-total" id="attackerLossTotal">0 IPC lost</div>
+    </div>
+  </div>
+
+  <!-- CENTER CONTROLS -->
+  <div class="center-panel">
+    <div class="ctrl-box">
+      <h3>Combat Controls</h3>
+      <button class="btn btn-primary" id="rollBtn" onclick="rollRound()">Roll Round</button>
+      <button class="btn btn-secondary" id="autoBattleBtn" onclick="autoBattle()">Auto Battle</button>
+      <button class="btn btn-secondary" onclick="simulate1000()">Simulate 1000</button>
+      <div class="stripe"></div>
+      <button class="btn btn-secondary" onclick="newBattle()">New Battle</button>
+      <button class="btn btn-danger" onclick="clearAll()">Clear All</button>
+    </div>
+    <div class="log-box">
+      <h3>Battle Log</h3>
+      <div id="battleLog"></div>
+    </div>
+  </div>
+
+  <!-- DEFENDER -->
+  <div class="force-panel" id="defenderPanel">
+    <div class="force-header" style="background:#4a3060">
+      <span class="force-title">DEFENDER</span>
+      <select id="defenderNation" class="nation-select" onchange="updateNationColor('defender')"></select>
+    </div>
+    <div class="edition-row" style="visibility:hidden">
+      <span class="edition-label">Edition:</span>
+      <select class="edition-select" disabled></select>
+    </div>
+    <div id="defenderGrid" class="units-grid"></div>
+    <div class="expected-hits" id="defenderExpected">Expected Hits: <span>0.00</span></div>
+    <div class="losses-panel">
+      <div class="losses-title">Losses</div>
+      <div class="losses-list" id="defenderLossesList"></div>
+      <div class="loss-total" id="defenderLossTotal">0 IPC lost</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== SVG ICONS ====================
+const SVG_ICONS = {
+  infantry:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <circle cx="30" cy="10" r="6"/>
+    <rect x="24" y="17" width="12" height="16" rx="2"/>
+    <rect x="22" y="33" width="6" height="14" rx="2"/>
+    <rect x="32" y="33" width="6" height="14" rx="2"/>
+    <rect x="18" y="19" width="10" height="4" rx="1" transform="rotate(-30 18 19)"/>
+    <rect x="32" y="19" width="10" height="4" rx="1" transform="rotate(30 32 19)"/>
+    <rect x="8" y="24" width="14" height="3" rx="1.5"/>
+  </svg>`,
+  artillery:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <rect x="4" y="32" width="44" height="8" rx="2"/>
+    <rect x="36" y="18" width="20" height="5" rx="2.5" transform="rotate(-15 36 18)"/>
+    <circle cx="12" cy="44" r="7" fill="currentColor"/>
+    <circle cx="12" cy="44" r="3" fill="rgba(0,0,0,0.3)"/>
+    <circle cx="36" cy="44" r="7" fill="currentColor"/>
+    <circle cx="36" cy="44" r="3" fill="rgba(0,0,0,0.3)"/>
+    <rect x="24" y="28" width="8" height="8"/>
+  </svg>`,
+  mech_infantry:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <rect x="6" y="28" width="48" height="16" rx="3"/>
+    <rect x="10" y="22" width="28" height="10" rx="2"/>
+    <rect x="14" y="18" width="18" height="7" rx="2"/>
+    <rect x="3" y="34" width="8" height="6" rx="1"/>
+    <rect x="49" y="34" width="8" height="6" rx="1"/>
+    <circle cx="12" cy="46" r="6"/>
+    <circle cx="30" cy="46" r="6"/>
+    <circle cx="48" cy="46" r="6"/>
+    <rect x="38" y="20" width="14" height="3" rx="1.5" transform="rotate(-10 38 20)"/>
+  </svg>`,
+  tank:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <rect x="4" y="30" width="52" height="16" rx="3"/>
+    <rect x="10" y="22" width="32" height="12" rx="3"/>
+    <ellipse cx="30" cy="24" rx="12" ry="7"/>
+    <rect x="28" y="12" width="22" height="4" rx="2"/>
+    <circle cx="12" cy="48" r="6"/>
+    <circle cx="28" cy="48" r="6"/>
+    <circle cx="44" cy="48" r="6"/>
+    <rect x="4" y="42" width="52" height="4" rx="1"/>
+  </svg>`,
+  aa_gun:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <rect x="18" y="30" width="24" height="6" rx="2"/>
+    <rect x="26" y="14" width="5" height="24" rx="2.5" transform="rotate(-45 26 14)"/>
+    <rect x="34" y="14" width="5" height="24" rx="2.5" transform="rotate(45 34 14)"/>
+    <rect x="28" y="8" width="4" height="20" rx="2" transform="rotate(-25 28 8)"/>
+    <circle cx="30" cy="36" r="4"/>
+    <line x1="8" y1="36" x2="52" y2="36" stroke="currentColor" stroke-width="3"/>
+    <circle cx="14" cy="44" r="5"/>
+    <circle cx="46" cy="44" r="5"/>
+  </svg>`,
+  fighter:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="30" rx="6" ry="20"/>
+    <polygon points="30,20 5,38 12,38 30,28 48,38 55,38"/>
+    <polygon points="30,44 18,52 22,52 30,48 38,52 42,52"/>
+    <rect x="27" y="8" width="6" height="8" rx="3"/>
+  </svg>`,
+  tac_bomber:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="30" rx="7" ry="22"/>
+    <polygon points="30,18 2,40 10,40 30,30 50,40 58,40"/>
+    <polygon points="30,46 14,54 20,54 30,50 40,54 46,54"/>
+    <ellipse cx="14" cy="36" rx="4" ry="2"/>
+    <ellipse cx="46" cy="36" rx="4" ry="2"/>
+    <rect x="27" y="6" width="6" height="8" rx="3"/>
+  </svg>`,
+  strat_bomber:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="30" rx="8" ry="24"/>
+    <polygon points="30,14 1,38 8,38 30,26 52,38 59,38"/>
+    <polygon points="30,48 12,56 18,56 30,52 42,56 48,56"/>
+    <ellipse cx="10" cy="33" rx="4" ry="1.5"/>
+    <ellipse cx="18" cy="30" rx="4" ry="1.5"/>
+    <ellipse cx="42" cy="30" rx="4" ry="1.5"/>
+    <ellipse cx="50" cy="33" rx="4" ry="1.5"/>
+    <rect x="27" y="4" width="6" height="10" rx="3"/>
+  </svg>`,
+  battleship:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="40" rx="26" ry="10"/>
+    <rect x="8" y="30" width="44" height="12" rx="2"/>
+    <rect x="12" y="22" width="36" height="10" rx="2"/>
+    <rect x="14" y="18" width="10" height="6" rx="1"/>
+    <rect x="36" y="18" width="10" height="6" rx="1"/>
+    <rect x="10" y="16" width="14" height="3" rx="1"/>
+    <rect x="36" y="16" width="14" height="3" rx="1"/>
+    <rect x="26" y="14" width="8" height="10" rx="1"/>
+    <rect x="28" y="8" width="4" height="8"/>
+  </svg>`,
+  carrier:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="44" rx="26" ry="8"/>
+    <rect x="6" y="36" width="48" height="10" rx="2"/>
+    <rect x="8" y="28" width="44" height="10" rx="1"/>
+    <rect x="38" y="18" width="14" height="12" rx="2"/>
+    <rect x="40" y="14" width="3" height="6"/>
+    <rect x="44" y="16" width="3" height="4"/>
+    <line x1="8" y1="29" x2="36" y2="29" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+    <line x1="8" y1="32" x2="36" y2="32" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+  </svg>`,
+  cruiser:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="42" rx="22" ry="8"/>
+    <rect x="10" y="34" width="40" height="10" rx="2"/>
+    <rect x="14" y="26" width="32" height="10" rx="2"/>
+    <rect x="16" y="20" width="12" height="8" rx="1"/>
+    <rect x="32" y="20" width="12" height="8" rx="1"/>
+    <rect x="14" y="18" width="8" height="3" rx="1"/>
+    <rect x="38" y="18" width="8" height="3" rx="1"/>
+    <rect x="26" y="16" width="8" height="10" rx="1"/>
+    <rect x="28" y="10" width="4" height="8"/>
+  </svg>`,
+  destroyer:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="44" rx="20" ry="7"/>
+    <rect x="12" y="36" width="36" height="10" rx="2"/>
+    <rect x="16" y="28" width="28" height="10" rx="2"/>
+    <rect x="24" y="22" width="12" height="8" rx="1"/>
+    <rect x="26" y="16" width="8" height="8" rx="1"/>
+    <rect x="14" y="26" width="6" height="3" rx="1"/>
+    <rect x="40" y="26" width="6" height="3" rx="1"/>
+  </svg>`,
+  submarine:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="36" rx="26" ry="10"/>
+    <rect x="26" y="20" width="8" height="16" rx="2"/>
+    <rect x="30" y="12" width="2" height="10"/>
+    <ellipse cx="31" cy="12" rx="3" ry="2"/>
+    <path d="M4 36 Q30 20 56 36" fill="none" stroke="currentColor" stroke-width="3"/>
+  </svg>`,
+  transport:`<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <ellipse cx="30" cy="44" rx="24" ry="8"/>
+    <rect x="8" y="36" width="44" height="10" rx="2"/>
+    <rect x="12" y="26" width="36" height="12" rx="2"/>
+    <rect x="14" y="20" width="10" height="8" rx="1"/>
+    <rect x="26" y="18" width="8" height="10" rx="1"/>
+    <rect x="36" y="20" width="10" height="8" rx="1"/>
+    <rect x="8" y="24" width="44" height="3" fill="rgba(0,0,0,0.2)"/>
+  </svg>`
+};
+
+// ==================== EDITIONS & UNITS ====================
+const EDITIONS = {
+  'aa1941':{name:'A&A 1941 (Starter)',year:1941},
+  'aa1942':{name:'A&A 1942 2nd Ed',year:1942},
+  'anniversary':{name:'Anniversary 2008',year:2008},
+  'europe1940':{name:'Europe 1940 2nd Ed',year:1940},
+  'pacific1940':{name:'Pacific 1940 2nd Ed',year:1940},
+  'global1940':{name:'Global 1940',year:1940}
+};
+
+// Unit definitions: id, name, attack, defense, cost, special, editions
+// special flags: artBonus, artSource, subFirstStrike, twoHit, aaFire, tacBonus, tacSource, destroyerCancel
+const ALL_UNITS=[
+  {id:'infantry',     name:'Infantry',          atk:1, def:2, cost:3,  special:['artBonus'],     icon:'infantry',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'artillery',    name:'Artillery',          atk:2, def:2, cost:4,  special:['artSource'],    icon:'artillery',
+   editions:['aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'mech_infantry',name:'Mech Infantry',      atk:1, def:2, cost:4,  special:['artBonus','tacBonus'], icon:'mech_infantry',
+   editions:['anniversary','europe1940','pacific1940','global1940']},
+  {id:'tank',         name:'Tank',               atk:3, def:3, cost:6,  special:['tacSource'],    icon:'tank',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'aa_gun',       name:'AA Gun',             atk:0, def:0, cost:5,  special:['aaFire'],       icon:'aa_gun',
+   editions:['aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'fighter',      name:'Fighter',            atk:3, def:4, cost:10, special:[],               icon:'fighter',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'tac_bomber',   name:'Tac Bomber',         atk:3, def:3, cost:11, special:['tacBonus'],     icon:'tac_bomber',
+   editions:['anniversary','europe1940','pacific1940','global1940']},
+  {id:'strat_bomber', name:'Strat Bomber',       atk:4, def:1, cost:12, special:[],               icon:'strat_bomber',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'battleship',   name:'Battleship',         atk:4, def:4, cost:20, special:['twoHit'],       icon:'battleship',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'carrier',      name:'Aircraft Carrier',   atk:0, def:2, cost:16, special:['twoHit'],       icon:'carrier',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940'],
+   atkEditions:{'aa1941':0,'aa1942':0,'anniversary':1,'europe1940':0,'pacific1940':0,'global1940':0}},
+  {id:'cruiser',      name:'Cruiser',            atk:3, def:3, cost:12, special:[],               icon:'cruiser',
+   editions:['anniversary','europe1940','pacific1940','global1940']},
+  {id:'destroyer',    name:'Destroyer',          atk:2, def:2, cost:8,  special:['destroyerCancel'], icon:'destroyer',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'submarine',    name:'Submarine',          atk:2, def:1, cost:6,  special:['subFirstStrike'], icon:'submarine',
+   editions:['aa1942','anniversary','europe1940','pacific1940','global1940']},
+  {id:'transport',    name:'Transport',          atk:0, def:0, cost:7,  special:[],               icon:'transport',
+   editions:['aa1941','aa1942','anniversary','europe1940','pacific1940','global1940']}
+];
+
+const NATIONS=[
+  {id:'usa',    name:'USA',          color:'#4a5a20'},
+  {id:'uk',     name:'UK',           color:'#8a7840'},
+  {id:'ussr',   name:'USSR',         color:'#8a2820'},
+  {id:'germany',name:'Germany',      color:'#506070'},
+  {id:'japan',  name:'Japan',        color:'#7a6030'},
+  {id:'italy',  name:'Italy',        color:'#607848'},
+  {id:'anzac',  name:'ANZAC',        color:'#2a6858'},
+  {id:'china',  name:'China',        color:'#a89820'},
+  {id:'allied', name:'Allied (Generic)', color:'#6a1a1a'},
+  {id:'axis',   name:'Axis (Generic)',   color:'#505060'}
+];
+
+// ==================== STATE ====================
+let state = {
+  edition: 'aa1942',
+  attackerNation: 'usa',
+  defenderNation: 'germany',
+  attackerCounts: {},
+  defenderCounts: {},
+  attackerLosses: {},
+  defenderLosses: {},
+  battleRound: 1,
+  battleActive: false,
+  phase: 'setup', // setup, aa_fire, sub_fire, main_fire, casualty_attacker, casualty_defender
+  pendingCasualties: null, // {side, hits, tokens}
+};
+
+// ==================== INIT ====================
+function init(){
+  const ns=document.getElementById('attackerNation');
+  const nd=document.getElementById('defenderNation');
+  const es=document.getElementById('editionSelect');
+  NATIONS.forEach(n=>{
+    ns.innerHTML+=`<option value="${n.id}">${n.name}</option>`;
+    nd.innerHTML+=`<option value="${n.id}">${n.name}</option>`;
+  });
+  nd.value='germany';
+  Object.keys(EDITIONS).forEach(k=>{
+    es.innerHTML+=`<option value="${k}">${EDITIONS[k].name}</option>`;
+  });
+  es.value='aa1942';
+  updateNationColor('attacker');
+  updateNationColor('defender');
+  buildUnitGrids();
+}
+
+function getNationColor(side){
+  const id = side==='attacker' ? state.attackerNation : state.defenderNation;
+  return NATIONS.find(n=>n.id===id)?.color || '#4a5a20';
+}
+
+function updateNationColor(side){
+  const sel=document.getElementById(side==='attacker'?'attackerNation':'defenderNation');
+  const val=sel.value;
+  if(side==='attacker') state.attackerNation=val; else state.defenderNation=val;
+  const col=getNationColor(side);
+  const panel=document.getElementById(side==='attacker'?'attackerPanel':'defenderPanel');
+  panel.querySelector('.force-header').style.background=col;
+  panel.querySelector('.force-header').style.borderBottom=`2px solid ${adjustColor(col,-30)}`;
+  renderUnitIcons(side);
+  updateExpected();
+}
+
+function adjustColor(hex,amt){
+  let r=parseInt(hex.slice(1,3),16)+amt;
+  let g=parseInt(hex.slice(3,5),16)+amt;
+  let b=parseInt(hex.slice(5,7),16)+amt;
+  r=Math.min(255,Math.max(0,r));g=Math.min(255,Math.max(0,g));b=Math.min(255,Math.max(0,b));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function changeEdition(){
+  state.edition=document.getElementById('editionSelect').value;
+  buildUnitGrids();
+}
+
+function getEditionUnits(){
+  return ALL_UNITS.filter(u=>u.editions.includes(state.edition));
+}
+
+function getUnitAtk(unit){
+  if(unit.id==='carrier'&&unit.atkEditions) return unit.atkEditions[state.edition]??0;
+  return unit.atk;
+}
+
+function buildUnitGrids(){
+  const units=getEditionUnits();
+  ['attacker','defender'].forEach(side=>{
+    const grid=document.getElementById(side+'Grid');
+    grid.innerHTML='';
+    const counts = side==='attacker' ? state.attackerCounts : state.defenderCounts;
+    units.forEach(u=>{
+      if(!(u.id in counts)) counts[u.id]=0;
+      const atk=getUnitAtk(u);
+      const defV=u.def;
+      const tagsHTML=u.special.map(s=>tagHTML(s)).join('');
+      const col=getNationColor(side);
+      const card=document.createElement('div');
+      card.className='unit-card';
+      card.id=`card_${side}_${u.id}`;
+      card.innerHTML=`
+        <div class="unit-icon-wrap" id="iconwrap_${side}_${u.id}" style="background:${col};color:${lighten(col,180)}">
+          ${SVG_ICONS[u.icon]||''}
+        </div>
+        <div class="unit-name">${u.name}</div>
+        <div class="unit-stats">A${atk}/D${defV} | ${u.cost} IPC</div>
+        <div class="unit-tags">${tagsHTML}</div>
+        <div class="counter-row">
+          <button class="cnt-btn" onclick="changeCount('${side}','${u.id}',-1)">−</button>
+          <div class="cnt-val" id="cnt_${side}_${u.id}">${counts[u.id]}</div>
+          <button class="cnt-btn" onclick="changeCount('${side}','${u.id}',1)">+</button>
+        </div>`;
+      grid.appendChild(card);
+    });
+  });
+  updateExpected();
+}
+
+function lighten(hex,mix){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.round((r*1+mix*1)/2);g=Math.round((g*1+mix*1)/2);b=Math.round((b*1+mix*1)/2);
+  r=Math.min(255,r);g=Math.min(255,g);b=Math.min(255,b);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function tagHTML(s){
+  const map={artBonus:'ART BONUS',artSource:'ART',subFirstStrike:'1ST STRIKE',twoHit:'2-HIT',aaFire:'AA FIRE',tacBonus:'TAC BONUS',tacSource:'TAC PAIR',destroyerCancel:'DEST.'};
+  const cls={subFirstStrike:'sub',twoHit:'twohit',artBonus:'art',artSource:'art',tacBonus:'art',tacSource:'art',destroyerCancel:'sub'};
+  return `<span class="tag ${cls[s]||''}">${map[s]||s}</span>`;
+}
+
+function renderUnitIcons(side){
+  const units=getEditionUnits();
+  const col=getNationColor(side);
+  units.forEach(u=>{
+    const wrap=document.getElementById(`iconwrap_${side}_${u.id}`);
+    if(wrap){wrap.style.background=col;wrap.style.color=lighten(col,180);}
+  });
+}
+
+function changeCount(side, unitId, delta){
+  const counts = side==='attacker' ? state.attackerCounts : state.defenderCounts;
+  counts[unitId]=Math.max(0,(counts[unitId]||0)+delta);
+  document.getElementById(`cnt_${side}_${unitId}`).textContent=counts[unitId];
+  updateExpected();
+}
+
+// ==================== EXPECTED HITS ====================
+function calcExpected(side){
+  const counts=side==='attacker'?state.attackerCounts:state.defenderCounts;
+  const units=getEditionUnits();
+  let total=0;
+  // Artillery bonus
+  const artCount=counts['artillery']||0;
+  let artBonus=artCount; // number of eligible units that get +1
+  const mechCount=counts['mech_infantry']||0;
+  const infCount=counts['infantry']||0;
+  let bonusEligible=(infCount+mechCount);
+  let bonusApplied=Math.min(artBonus,bonusEligible);
+  // Tac bomber bonus
+  const tacCount=counts['tac_bomber']||0;
+  const tankCount=counts['tank']||0;
+  const mechForTac= Math.max(0,mechCount - Math.min(artBonus,mechCount));
+  let tacPairs = Math.min(tacCount, tankCount+mechForTac);
+
+  units.forEach(u=>{
+    const cnt=counts[u.id]||0;
+    if(cnt===0||u.id==='aa_gun'||u.id==='transport') return;
+    let baseAtk = side==='attacker' ? getUnitAtk(u) : u.def;
+    let unitHits=0;
+    if(u.id==='infantry'){
+      let bonused=Math.min(cnt,bonusApplied);
+      unitHits += bonused*(2/6)+(cnt-bonused)*(1/6);
+    } else if(u.id==='mech_infantry'){
+      // mech used for art bonus first
+      let artMech=Math.max(0,Math.min(cnt, artBonus-infCount));
+      let tacMech=side==='attacker'?Math.min(cnt-artMech,tacPairs):0;
+      let normalMech=cnt-artMech-tacMech;
+      if(side==='attacker'){
+        unitHits+=artMech*(2/6)+tacMech*(4/6)+normalMech*(1/6);
+      } else {
+        unitHits+=artMech*(2/6)+(cnt-artMech)*(2/6);
+      }
+    } else if(u.id==='tac_bomber'){
+      if(side==='attacker'){
+        let paired=Math.min(cnt,tacPairs);
+        unitHits+=paired*(4/6)+(cnt-paired)*(3/6);
+      } else {
+        unitHits+=cnt*(3/6);
+      }
+    } else {
+      unitHits+=cnt*(baseAtk/6);
+    }
+    total+=unitHits;
+  });
+  return total;
+}
+
+function updateExpected(){
+  ['attacker','defender'].forEach(side=>{
+    const exp=calcExpected(side);
+    const el=document.getElementById(side+'Expected');
+    if(el) el.innerHTML=`Expected Hits: <span>${exp.toFixed(2)}</span>`;
+  });
+}
+
+// ==================== COMBAT ENGINE ====================
+function rollDie(){ return Math.floor(Math.random()*6)+1; }
+
+function getForceUnits(side){
+  // Returns array of unit instances for combat
+  const counts=side==='attacker'?state.attackerCounts:state.defenderCounts;
+  const units=getEditionUnits();
+  const result=[];
+  units.forEach(u=>{
+    const cnt=counts[u.id]||0;
+    for(let i=0;i<cnt;i++){
+      result.push({
+        unitId:u.id,unitDef:u,
+        damaged:false,
+        id:`${side}_${u.id}_${i}`
+      });
+    }
+  });
+  return result;
+}
+
+function rollForSide(instances, side, subStrike, hasEnemyDestroyer){
+  const units=getEditionUnits();
+  // Artillery bonus calc
+  const allCounts={};
+  instances.forEach(inst=>{allCounts[inst.unitId]=(allCounts[inst.unitId]||0)+1;});
+  const artCount=allCounts['artillery']||0;
+  const infCount=allCounts['infantry']||0;
+  const mechCount=allCounts['mech_infantry']||0;
+  let artBonusLeft=artCount;
+  let infBonused=0, mechBonused=0;
+  // Tac bonus
+  const tacCount=allCounts['tac_bomber']||0;
+  const tankCount=allCounts['tank']||0;
+  let tacPairsLeft=Math.min(tacCount,tankCount+mechCount);
+
+  const rolls=[];
+  instances.forEach(inst=>{
+    const u=inst.unitDef;
+    if(u.id==='aa_gun'||u.id==='transport') return; // no combat roll
+    if(subStrike && !u.special.includes('subFirstStrike')) return;
+    if(!subStrike && u.special.includes('subFirstStrike')&&!hasEnemyDestroyer) return;
+    // sub first strike: if enemy has destroyer, subs fight normally
+    let threshold=side==='attacker'?getUnitAtk(u):u.def;
+    if(u.id==='infantry'&&side==='attacker'){
+      if(artBonusLeft>0&&infBonused<infCount){threshold=2;artBonusLeft--;infBonused++;}
+      else threshold=1;
+    } else if(u.id==='mech_infantry'&&side==='attacker'){
+      if(artBonusLeft>0&&mechBonused<mechCount){threshold=2;artBonusLeft--;mechBonused++;}
+      else if(tacPairsLeft>0){threshold=4;tacPairsLeft--;}
+      else threshold=1;
+    } else if(u.id==='tac_bomber'&&side==='attacker'){
+      if(tacPairsLeft>0){threshold=4;tacPairsLeft--;}
+      else threshold=3;
+    }
+    if(threshold<=0) return; // can't hit (carrier A0, transport A0 etc)
+    const roll=rollDie();
+    const hit=roll<=threshold;
+    rolls.push({inst,roll,threshold,hit,unitId:u.id});
+  });
+  return rolls;
+}
+
+function rollAAFire(attackerInstances){
+  const aircraft=['fighter','tac_bomber','strat_bomber'];
+  const planes=attackerInstances.filter(i=>aircraft.includes(i.unitId));
+  const rolls=[];
+  planes.forEach(inst=>{
+    const roll=rollDie();
+    const hit=roll===1;
+    rolls.push({inst,roll,hit,unitId:inst.unitId});
+  });
+  return rolls;
+}
+
+// ==================== LOSSES TRACKING ====================
+function addLoss(side, unitId, count=1){
+  const losses=side==='attacker'?state.attackerLosses:state.defenderLosses;
+  losses[unitId]=(losses[unitId]||0)+count;
+  renderLosses(side);
+}
+
+function renderLosses(side){
+  const losses=side==='attacker'?state.attackerLosses:state.defenderLosses;
+  const list=document.getElementById(side+'LossesList');
+  const totalEl=document.getElementById(side+'LossTotal');
+  let html='', total=0;
+  Object.entries(losses).forEach(([uid,cnt])=>{
+    if(cnt<=0)return;
+    const udef=ALL_UNITS.find(u=>u.id===uid);
+    if(!udef)return;
+    const ipc=udef.cost*cnt;
+    total+=ipc;
+    html+=`<span class="loss-item">${udef.name} ×${cnt} (${ipc})</span>`;
+  });
+  list.innerHTML=html||'<span style="color:var(--brown-light);font-size:0.75rem">None</span>';
+  totalEl.textContent=total+' IPC lost';
+}
+
+// ==================== BATTLE LOG ====================
+function logMsg(msg, cls=''){
+  const log=document.getElementById('battleLog');
+  const div=document.createElement('div');
+  div.className='log-entry '+(cls);
+  div.textContent=msg;
+  log.appendChild(div);
+  log.scrollTop=log.scrollHeight;
+}
+
+// ==================== DICE DISPLAY ====================
+function showDiceResults(atkRolls, defRolls, aaRolls, subAtkRolls, subDefRolls){
+  const area=document.getElementById('diceResultsArea');
+  area.classList.remove('hidden');
+  let html='<div style="display:flex;gap:10px;flex-wrap:wrap">';
+  if(aaRolls&&aaRolls.length>0) html+=diceSection('AA Fire vs Aircraft',aaRolls);
+  if(subAtkRolls&&subAtkRolls.length>0) html+=diceSection('Attacker Sub First Strike',subAtkRolls);
+  if(subDefRolls&&subDefRolls.length>0) html+=diceSection('Defender Sub First Strike',subDefRolls);
+  if(atkRolls&&atkRolls.length>0) html+=diceSection('Attacker Rolls',atkRolls);
+  if(defRolls&&defRolls.length>0) html+=diceSection('Defender Rolls',defRolls);
+  html+='</div>';
+  area.innerHTML=html;
+}
+
+function diceSection(title, rolls){
+  let html=`<div class="dice-section"><h4>${title}</h4><div class="dice-row">`;
+  rolls.forEach(r=>{
+    html+=`<div class="die ${r.hit?'hit':'miss'}" title="${r.inst?r.inst.unitDef.name+' (need ≤'+r.threshold+')':''}">`;
+    html+=r.roll;
+    html+='</div>';
+  });
+  const hits=rolls.filter(r=>r.hit).length;
+  html+=`</div><div style="font-size:0.8rem;color:var(--brown);font-weight:600">${hits} HIT${hits!==1?'S':''} of ${rolls.length} dice</div></div>`;
+  return html;
+}
+
+// ==================== CASUALTY SELECTION ====================
+let casualtyResolve=null;
+
+function showCasualtyPanel(side, hitsToAssign, instances, roundContext){
+  return new Promise((resolve)=>{
+    casualtyResolve=resolve;
+    const overlay=document.getElementById('casualtyOverlay');
+    overlay.classList.remove('hidden');
+    const col=getNationColor(side);
+    const lightCol=lighten(col,160);
+    const sideName=side==='attacker'?'ATTACKER':'DEFENDER';
+    // Build tokens
+    const tokenData=instances.map((inst,idx)=>({...inst,tokenIdx:idx,state:'alive'}));
+    // Filter out AA guns and transports (they can't take hits normally for selection purposes unless nothing else)
+    // Actually transports can be taken as casualties, AA guns too
+    let html=`<div class="casualty-box">
+      <h2>${sideName}: Select ${hitsToAssign} Casualt${hitsToAssign!==1?'ies':'y'}</h2>
+      <div class="casualty-instr">Click units to assign hits. Two-hit units require 2 clicks to sink. Click sunk unit to undo.</div>
+      <div class="hit-counter" id="hitCounter">0 of ${hitsToAssign} hits assigned</div>
+      <div class="token-grid" id="tokenGrid">`;
+    tokenData.forEach((inst,i)=>{
+      const u=inst.unitDef;
+      const isTwoHit=u.special.includes('twoHit');
+      html+=`<div class="token" id="tok_${i}" style="background:${col};color:${lightCol}" onclick="tokenClick(${i})" title="${u.name}">
+        ${SVG_ICONS[u.icon]||''}
+        <div class="token-label">${u.name}</div>
+        <div class="token-overlay" id="tok_overlay_${i}"></div>
+      </div>`;
+    });
+    html+=`</div>
+      <button class="btn btn-success" id="confirmCasBtn" disabled onclick="confirmCasualties(${hitsToAssign})">Confirm Casualties</button>
+      <button class="btn btn-secondary" style="margin-top:4px" onclick="cancelCasualties()">Auto-Assign</button>
+    </div>`;
+    overlay.innerHTML=html;
+    // Store token data in closure
+    overlay._tokenData=tokenData;
+    overlay._hitsToAssign=hitsToAssign;
+    overlay._hitCount=0;
+  });
+}
+
+function tokenClick(idx){
+  const overlay=document.getElementById('casualtyOverlay');
+  const tokenData=overlay._tokenData;
+  const hitsToAssign=overlay._hitsToAssign;
+  const inst=tokenData[idx];
+  const isTwoHit=inst.unitDef.special.includes('twoHit');
+  const curState=inst.state;
+  const hitCount=overlay._hitCount;
+
+  if(curState==='alive'){
+    if(isTwoHit){
+      if(hitCount>=hitsToAssign) return;
+      inst.state='damaged';
+      overlay._hitCount++;
+    } else {
+      if(hitCount>=hitsToAssign) return;
+      inst.state='dead';
+      overlay._hitCount++;
+    }
+  } else if(curState==='damaged'){
+    if(hitCount>=hitsToAssign){
+      // undo damage
+      inst.state='alive';
+      overlay._hitCount--;
+    } else {
+      inst.state='dead';
+      overlay._hitCount++;
+    }
+  } else if(curState==='dead'){
+    if(isTwoHit){
+      // undo: dead -> damaged
+      inst.state='damaged';
+      overlay._hitCount--;
+    } else {
+      inst.state='alive';
+      overlay._hitCount--;
+    }
+  }
+  updateTokenVisuals(overlay);
+}
+
+function updateTokenVisuals(overlay){
+  const tokenData=overlay._tokenData;
+  const hitsToAssign=overlay._hitsToAssign;
+  overlay._hitCount=0;
+  tokenData.forEach((inst,i)=>{
+    overlay._hitCount+=(inst.state==='dead'?1:0)+(inst.state==='damaged'?1:0);
+  });
+  // Wait, count properly
+  // For two-hit: damaged=1 hit, dead=2 hits; for single: dead=1 hit
+  let actualHits=0;
+  tokenData.forEach(inst=>{
+    const isTwoHit=inst.unitDef.special.includes('twoHit');
+    if(inst.state==='damaged') actualHits+=1;
+    else if(inst.state==='dead') actualHits+=(isTwoHit?2:1);
+  });
+  overlay._hitCount=actualHits;
+
+  tokenData.forEach((inst,i)=>{
+    const tok=document.getElementById('tok_'+i);
+    const ov=document.getElementById('tok_overlay_'+i);
+    if(!tok||!ov)return;
+    tok.className='token';
+    if(inst.state==='damaged'){tok.classList.add('damaged');ov.innerHTML='<span class="dmg-star">★</span>';ov.className='token-overlay dmg-star';}
+    else if(inst.state==='dead'){tok.classList.add('dead');ov.innerHTML='<span class="dead-x">✕</span>';ov.className='token-overlay dead-x';}
+    else{ov.innerHTML='';ov.className='token-overlay';}
+  });
+  const hc=document.getElementById('hitCounter');
+  if(hc) hc.textContent=`${overlay._hitCount} of ${hitsToAssign} hits assigned`;
+  const btn=document.getElementById('confirmCasBtn');
+  if(btn) btn.disabled=(overlay._hitCount!==hitsToAssign);
+}
+
+function confirmCasualties(hitsToAssign){
+  const overlay=document.getElementById('casualtyOverlay');
+  const tokenData=overlay._tokenData;
+  overlay.classList.add('hidden');
+  const result={removed:[],damaged:[]};
+  tokenData.forEach(inst=>{
+    if(inst.state==='dead') result.removed.push(inst);
+    else if(inst.state==='damaged') result.damaged.push(inst);
+  });
+  if(casualtyResolve) casualtyResolve(result);
+  casualtyResolve=null;
+}
+
+function cancelCasualties(){
+  // Auto-assign cheapest
+  const overlay=document.getElementById('casualtyOverlay');
+  const tokenData=overlay._tokenData;
+  const hitsToAssign=overlay._hitsToAssign;
+  autoAssignCasualties(tokenData,hitsToAssign);
+  overlay.classList.add('hidden');
+  const result={removed:[],damaged:[]};
+  tokenData.forEach(inst=>{
+    if(inst.state==='dead') result.removed.push(inst);
+    else if(inst.state==='damaged') result.damaged.push(inst);
+  });
+  if(casualtyResolve) casualtyResolve(result);
+  casualtyResolve=null;
+}
+
+function autoAssignCasualties(tokenData, hits){
+  // Reset all
+  tokenData.forEach(t=>{t.state='alive';});
+  // Sort by cost ascending (cheapest first), but non-combat last
+  const sorted=[...tokenData].sort((a,b)=>{
+    const aNC=a.unitDef.id==='transport'||a.unitDef.id==='aa_gun';
+    const bNC=b.unitDef.id==='transport'||b.unitDef.id==='aa_gun';
+    if(aNC!==bNC) return aNC?1:-1;
+    return a.unitDef.cost-b.unitDef.cost;
+  });
+  let hitsLeft=hits;
+  sorted.forEach(inst=>{
+    if(hitsLeft<=0)return;
+    const isTwoHit=inst.unitDef.special.includes('twoHit');
+    if(isTwoHit){
+      if(hitsLeft>=2){inst.state='dead';hitsLeft-=2;}
+      else {inst.state='damaged';hitsLeft-=1;}
+    } else {
+      inst.state='dead';hitsLeft-=1;
+    }
+  });
+}
+
+// ==================== APPLY CASUALTIES ====================
+function applyCasualties(side, casualties){
+  // Remove dead from counts, mark damaged
+  const counts=side==='attacker'?state.attackerCounts:state.defenderCounts;
+  casualties.removed.forEach(inst=>{
+    counts[inst.unitId]=Math.max(0,(counts[inst.unitId]||0)-1);
+    addLoss(side,inst.unitId,1);
+    document.getElementById(`cnt_${side}_${inst.unitId}`).textContent=counts[inst.unitId];
+  });
+  // Damaged two-hit units stay but track damage (we just log it; in this sim damaged = 1 free hit already absorbed)
+  // For simplicity, damaged battleships/carriers still need to be sunk on next hit
+  // We don't track individual damaged units in this sim, but we do log them
+  casualties.damaged.forEach(inst=>{
+    logMsg(`  ${inst.unitDef.name} damaged (1st hit)`, 'hit-line');
+  });
+}
+
+// ==================== MAIN ROLL ROUND ====================
+async function rollRound(){
+  const rollBtn=document.getElementById('rollBtn');
+  const autoBattleBtn=document.getElementById('autoBattleBtn');
+  rollBtn.disabled=true;
+  autoBattleBtn.disabled=true;
+
+  const atkInstances=getForceUnits('attacker');
+  const defInstances=getForceUnits('defender');
+
+  if(atkInstances.filter(i=>i.unitDef.atk>0&&i.unitDef.id!=='aa_gun'&&i.unitDef.id!=='transport').length===0&&
+     defInstances.filter(i=>i.unitDef.def>0&&i.unitDef.id!=='aa_gun'&&i.unitDef.id!=='transport').length===0){
+    logMsg('No units capable of combat on either side.','miss-line');
+    rollBtn.disabled=false;autoBattleBtn.disabled=false;return;
+  }
+
+  document.getElementById('roundDisplay').textContent=`ROUND ${state.battleRound}`;
+  logMsg(`--- Round ${state.battleRound} ---`,'round-header');
+
+  // === AA FIRE ===
+  const defAACount=state.defenderCounts['aa_gun']||0;
+  let aaRolls=[];
+  let aaHits=0;
+  if(defAACount>0){
+    aaRolls=rollAAFire(atkInstances);
+    aaHits=aaRolls.filter(r=>r.hit).length;
+    logMsg(`  AA Fire: ${aaRolls.length} dice → ${aaHits} hit(s)`,'hit-line');
+    aaRolls.forEach(r=>logMsg(`    ${r.inst.unitDef.name}: rolled ${r.roll} (need 1) → ${r.hit?'HIT':'miss'}`,r.hit?'hit-line':'miss-line'));
+  }
+
+  // === SUBMARINE FIRST STRIKE ===
+  const atkHasDestroyer=(state.attackerCounts['destroyer']||0)>0;
+  const defHasDestroyer=(state.defenderCounts['destroyer']||0)>0;
+  const atkHasSub=(state.attackerCounts['submarine']||0)>0;
+  const defHasSub=(state.defenderCounts['submarine']||0)>0;
+
+  let subAtkRolls=[], subDefRolls=[];
+  if(atkHasSub&&!defHasDestroyer){
+    subAtkRolls=rollForSide(atkInstances,'attacker',true,defHasDestroyer).filter(r=>r);
+  }
+  if(defHasSub&&!atkHasDestroyer){
+    subDefRolls=rollForSide(defInstances,'defender',true,atkHasDestroyer).filter(r=>r);
+  }
+
+  // === MAIN ROLLS (subs with destroyer present roll here; without destroyer they already fired in sub strike) ===
+  // rollForSide with subStrike=false skips subs that have no enemy destroyer (already handled above)
+  const atkRolls=rollForSide(atkInstances,'attacker',false,defHasDestroyer);
+  const defRolls=rollForSide(defInstances,'defender',false,atkHasDestroyer);
+
+  // Log rolls
+  [...subAtkRolls,...atkRolls].forEach(r=>logMsg(`  ATK ${r.inst.unitDef.name}: rolled ${r.roll} (need ≤${r.threshold}) → ${r.hit?'HIT':'miss'}`,r.hit?'hit-line':'miss-line'));
+  [...subDefRolls,...defRolls].forEach(r=>logMsg(`  DEF ${r.inst.unitDef.name}: rolled ${r.roll} (need ≤${r.threshold}) → ${r.hit?'HIT':'miss'}`,r.hit?'hit-line':'miss-line'));
+
+  showDiceResults(atkRolls, defRolls, aaRolls, subAtkRolls, subDefRolls);
+
+  const atkHits=[...subAtkRolls,...atkRolls].filter(r=>r.hit).length;
+  const defCombatHits=[...subDefRolls,...defRolls].filter(r=>r.hit).length;
+
+  logMsg(`  Attacker: ${atkHits} hit(s) | Defender: ${defCombatHits} hit(s) | AA: ${aaHits} hit(s)`,'round-header');
+
+  // === AA FIRE CASUALTIES: auto-assign to cheapest aircraft ===
+  const aaKilledIds=new Set();
+  if(aaHits>0){
+    const atkAll=atkInstances.filter(i=>i.unitDef.id!=='aa_gun');
+    const planes=atkAll.filter(i=>['fighter','tac_bomber','strat_bomber'].includes(i.unitId));
+    planes.sort((a,b)=>a.unitDef.cost-b.unitDef.cost);
+    let hLeft=aaHits;
+    planes.forEach(p=>{
+      if(hLeft<=0)return;
+      aaKilledIds.add(p.id);
+      state.attackerCounts[p.unitId]=Math.max(0,(state.attackerCounts[p.unitId]||0)-1);
+      addLoss('attacker',p.unitId,1);
+      document.getElementById(`cnt_attacker_${p.unitId}`).textContent=state.attackerCounts[p.unitId];
+      logMsg(`  AA Fire killed: ${p.unitDef.name}`,'hit-line');
+      hLeft--;
+    });
+  }
+
+  // === CASUALTY SELECTION: DEFENDER takes attacker hits ===
+  if(atkHits>0){
+    const defCombat=defInstances.filter(i=>i.unitDef.id!=='aa_gun');
+    if(defCombat.length>0){
+      const hitsToApply=Math.min(atkHits, countMaxHits(defCombat));
+      if(hitsToApply>0){
+        logMsg(`  Defender selects ${hitsToApply} casualt${hitsToApply!==1?'ies':'y'}...`);
+        const result=await showCasualtyPanel('defender',hitsToApply,defCombat,'attacker hits');
+        applyCasualties('defender',result);
+        logMsg(`  Defender lost: ${result.removed.map(i=>i.unitDef.name).join(', ')||'none'}`);
+      }
+    }
+  }
+
+  // === CASUALTY SELECTION: ATTACKER takes defender combat hits ===
+  if(defCombatHits>0){
+    const atkCombat=atkInstances.filter(i=>i.unitDef.id!=='aa_gun'&&!aaKilledIds.has(i.id));
+    if(atkCombat.length>0){
+      const hitsToApply=Math.min(defCombatHits, countMaxHits(atkCombat));
+      if(hitsToApply>0){
+        logMsg(`  Attacker selects ${hitsToApply} casualt${hitsToApply!==1?'ies':'y'}...`);
+        const result=await showCasualtyPanel('attacker',hitsToApply,atkCombat,'defender hits');
+        applyCasualties('attacker',result);
+        logMsg(`  Attacker lost: ${result.removed.map(i=>i.unitDef.name).join(', ')||'none'}`);
+      }
+    }
+  }
+
+  updateExpected();
+  state.battleRound++;
+  document.getElementById('roundDisplay').textContent=`ROUND ${state.battleRound}`;
+
+  // Check victory
+  const atkAlive=checkHasCombatUnits('attacker');
+  const defAlive=checkHasCombatUnits('defender');
+  if(!atkAlive||!defAlive){
+    let msg;
+    if(!atkAlive&&!defAlive) msg='MUTUAL ANNIHILATION';
+    else if(!atkAlive) msg='DEFENDER WINS';
+    else msg='ATTACKER WINS';
+    showVictory(msg);
+    logMsg(`=== ${msg} ===`,'round-header');
+  } else {
+    rollBtn.disabled=false;
+    autoBattleBtn.disabled=false;
+  }
+}
+
+function countMaxHits(instances){
+  let total=0;
+  instances.forEach(inst=>{
+    const isTwoHit=inst.unitDef.special.includes('twoHit');
+    total+=(isTwoHit?2:1);
+  });
+  return total;
+}
+
+function checkHasCombatUnits(side){
+  const counts=side==='attacker'?state.attackerCounts:state.defenderCounts;
+  const units=getEditionUnits();
+  return units.some(u=>{
+    if(counts[u.id]===0||(counts[u.id]||0)===0) return false;
+    if(u.id==='aa_gun'||u.id==='transport') return false;
+    const val=side==='attacker'?getUnitAtk(u):u.def;
+    return val>0;
+  });
+}
+
+// ==================== AUTO BATTLE ====================
+function autoBattle(){
+  const rollBtn=document.getElementById('rollBtn');
+  const autoBattleBtn=document.getElementById('autoBattleBtn');
+  rollBtn.disabled=true;autoBattleBtn.disabled=true;
+  let maxRounds=50;
+  let round=0;
+  while(round<maxRounds){
+    round++;
+    document.getElementById('roundDisplay').textContent=`ROUND ${state.battleRound}`;
+    logMsg(`--- Round ${state.battleRound} ---`,'round-header');
+    const atkInstances=getForceUnits('attacker');
+    const defInstances=getForceUnits('defender');
+    if(!checkHasCombatUnits('attacker')&&!checkHasCombatUnits('defender')) break;
+
+    const defAACount=state.defenderCounts['aa_gun']||0;
+    let aaRolls=[],aaHits=0;
+    if(defAACount>0){
+      aaRolls=rollAAFire(atkInstances);
+      aaHits=aaRolls.filter(r=>r.hit).length;
+      logMsg(`  AA Fire: ${aaRolls.length} dice → ${aaHits} hit(s)`,'hit-line');
+    }
+    const defHasDestroyer=(state.defenderCounts['destroyer']||0)>0;
+    const atkHasDestroyer=(state.attackerCounts['destroyer']||0)>0;
+    const subAtkRolls=(state.attackerCounts['submarine']||0)>0&&!defHasDestroyer?rollForSide(atkInstances,'attacker',true,defHasDestroyer):[];
+    const subDefRolls=(state.defenderCounts['submarine']||0)>0&&!atkHasDestroyer?rollForSide(defInstances,'defender',true,atkHasDestroyer):[];
+    const atkRolls=rollForSide(atkInstances,'attacker',false,defHasDestroyer);
+    const defRolls=rollForSide(defInstances,'defender',false,atkHasDestroyer);
+    const atkHits=[...subAtkRolls,...atkRolls].filter(r=>r.hit).length;
+    const defHitsTotal=[...subDefRolls,...defRolls].filter(r=>r.hit).length+aaHits;
+
+    // Auto casualties defender
+    if(atkHits>0){
+      const defCombat=defInstances.filter(i=>i.unitDef.id!=='aa_gun');
+      const hitsToApply=Math.min(atkHits,countMaxHits(defCombat));
+      if(hitsToApply>0){
+        autoAssignCasualties(defCombat,hitsToApply);
+        defCombat.forEach(inst=>{
+          if(inst.state==='dead'){
+            state.defenderCounts[inst.unitId]=Math.max(0,(state.defenderCounts[inst.unitId]||0)-1);
+            addLoss('defender',inst.unitId,1);
+            document.getElementById(`cnt_defender_${inst.unitId}`).textContent=state.defenderCounts[inst.unitId];
+          }
+        });
+        logMsg(`  Def lost: ${defCombat.filter(i=>i.state==='dead').map(i=>i.unitDef.name).join(', ')||'none'}`);
+      }
+    }
+    // Auto casualties attacker
+    const netDefHits=Math.max(0,defHitsTotal);
+    if(netDefHits>0){
+      const atkCombat=atkInstances.filter(i=>i.unitDef.id!=='aa_gun');
+      const hitsToApply=Math.min(netDefHits,countMaxHits(atkCombat));
+      if(hitsToApply>0){
+        autoAssignCasualties(atkCombat,hitsToApply);
+        atkCombat.forEach(inst=>{
+          if(inst.state==='dead'){
+            state.attackerCounts[inst.unitId]=Math.max(0,(state.attackerCounts[inst.unitId]||0)-1);
+            addLoss('attacker',inst.unitId,1);
+            document.getElementById(`cnt_attacker_${inst.unitId}`).textContent=state.attackerCounts[inst.unitId];
+          }
+        });
+        logMsg(`  Atk lost: ${atkCombat.filter(i=>i.state==='dead').map(i=>i.unitDef.name).join(', ')||'none'}`);
+      }
+    }
+
+    logMsg(`  Hits: ATK ${atkHits} | DEF ${netDefHits}`,'round-header');
+    updateExpected();
+    state.battleRound++;
+    const atkAlive=checkHasCombatUnits('attacker');
+    const defAlive=checkHasCombatUnits('defender');
+    if(!atkAlive||!defAlive){
+      let msg;
+      if(!atkAlive&&!defAlive) msg='MUTUAL ANNIHILATION';
+      else if(!atkAlive) msg='DEFENDER WINS';
+      else msg='ATTACKER WINS';
+      showVictory(msg);
+      logMsg(`=== ${msg} ===`,'round-header');
+      return;
+    }
+  }
+  if(round>=maxRounds) logMsg('Battle exceeded maximum rounds','miss-line');
+  rollBtn.disabled=false;autoBattleBtn.disabled=false;
+}
+
+// ==================== SIMULATE 1000 ====================
+function simulate1000(){
+  // Save current state
+  const savedAtkCounts={...state.attackerCounts};
+  const savedDefCounts={...state.defenderCounts};
+  const N=1000;
+  let atkWins=0,defWins=0,draws=0;
+  let totalRounds=0;
+  let totalAtkIPC=0,totalDefIPC=0;
+
+  for(let sim=0;sim<N;sim++){
+    const simAtk={...savedAtkCounts};
+    const simDef={...savedDefCounts};
+    let rounds=0,maxR=50;
+    let atkIPCLost=0,defIPCLost=0;
+    while(rounds<maxR){
+      rounds++;
+      const atkInst=getForceUnitsFromCounts(simAtk,'attacker');
+      const defInst=getForceUnitsFromCounts(simDef,'defender');
+      const atkCan=canFight(atkInst,'attacker');
+      const defCan=canFight(defInst,'defender');
+      if(!atkCan&&!defCan){draws++;break;}
+      if(!atkCan){defWins++;break;}
+      if(!defCan){atkWins++;break;}
+
+      const defAACount=simDef['aa_gun']||0;
+      let aaHits=0;
+      if(defAACount>0){
+        const planes=atkInst.filter(i=>['fighter','tac_bomber','strat_bomber'].includes(i.unitId));
+        planes.forEach(()=>{if(rollDie()===1)aaHits++;});
+      }
+      const defHasDest=(simDef['destroyer']||0)>0;
+      const atkHasDest=(simAtk['destroyer']||0)>0;
+      const subAR=(simAtk['submarine']||0)>0&&!defHasDest?rollForSide2(atkInst,'attacker',true,defHasDest,simAtk):[];
+      const subDR=(simDef['submarine']||0)>0&&!atkHasDest?rollForSide2(defInst,'defender',true,atkHasDest,simDef):[];
+      const atkR=rollForSide2(atkInst,'attacker',false,defHasDest,simAtk);
+      const defR=rollForSide2(defInst,'defender',false,atkHasDest,simDef);
+      let atkH=[...subAR,...atkR].filter(r=>r.hit).length;
+      let defH=[...subDR,...defR].filter(r=>r.hit).length+aaHits;
+
+      // Apply casualties
+      const defCombat=defInst.filter(i=>i.unitDef.id!=='aa_gun');
+      const hD=Math.min(atkH,countMaxHits(defCombat));
+      if(hD>0){autoAssignCasualties(defCombat,hD);defCombat.forEach(i=>{if(i.state==='dead'){simDef[i.unitId]=Math.max(0,(simDef[i.unitId]||0)-1);defIPCLost+=i.unitDef.cost;}});}
+      const atkCombat=atkInst.filter(i=>i.unitDef.id!=='aa_gun');
+      const hA=Math.min(defH,countMaxHits(atkCombat));
+      if(hA>0){autoAssignCasualties(atkCombat,hA);atkCombat.forEach(i=>{if(i.state==='dead'){simAtk[i.unitId]=Math.max(0,(simAtk[i.unitId]||0)-1);atkIPCLost+=i.unitDef.cost;}});}
+    }
+    if(rounds>=maxR){
+      const atkCan2=canFight(getForceUnitsFromCounts(simAtk,'attacker'),'attacker');
+      const defCan2=canFight(getForceUnitsFromCounts(simDef,'defender'),'defender');
+      if(!atkCan2&&!defCan2) draws++;
+      else if(!atkCan2) defWins++;
+      else if(!defCan2) atkWins++;
+      else draws++;
+    }
+    totalRounds+=rounds;totalAtkIPC+=atkIPCLost;totalDefIPC+=defIPCLost;
+    // Restore for next sim
+    Object.keys(savedAtkCounts).forEach(k=>simAtk[k]=savedAtkCounts[k]);
+    Object.keys(savedDefCounts).forEach(k=>simDef[k]=savedDefCounts[k]);
+  }
+
+  const avgRounds=(totalRounds/N).toFixed(1);
+  const avgAtkIPC=(totalAtkIPC/N).toFixed(1);
+  const avgDefIPC=(totalDefIPC/N).toFixed(1);
+  showSimResults(atkWins,defWins,draws,N,avgRounds,avgAtkIPC,avgDefIPC);
+}
+
+function getForceUnitsFromCounts(counts, side){
+  const units=getEditionUnits();
+  const result=[];
+  units.forEach(u=>{
+    const cnt=counts[u.id]||0;
+    for(let i=0;i<cnt;i++) result.push({unitId:u.id,unitDef:u,damaged:false,id:`${side}_${u.id}_${i}`,state:'alive'});
+  });
+  return result;
+}
+
+function canFight(instances, side){
+  return instances.some(i=>{
+    if(i.unitId==='aa_gun'||i.unitId==='transport') return false;
+    const v=side==='attacker'?getUnitAtk(i.unitDef):i.unitDef.def;
+    return v>0;
+  });
+}
+
+function rollForSide2(instances, side, subStrike, hasEnemyDest, counts){
+  const allCounts={};
+  instances.forEach(inst=>{allCounts[inst.unitId]=(allCounts[inst.unitId]||0)+1;});
+  const artCount=allCounts['artillery']||0;
+  const infCount=allCounts['infantry']||0;
+  const mechCount=allCounts['mech_infantry']||0;
+  let artBonusLeft=artCount;
+  let infBonused=0,mechBonused=0;
+  const tacCount=allCounts['tac_bomber']||0;
+  const tankCount=allCounts['tank']||0;
+  let tacPairsLeft=Math.min(tacCount,tankCount+mechCount);
+  const rolls=[];
+  instances.forEach(inst=>{
+    const u=inst.unitDef;
+    if(u.id==='aa_gun'||u.id==='transport') return;
+    if(subStrike&&!u.special.includes('subFirstStrike')) return;
+    if(!subStrike&&u.special.includes('subFirstStrike')&&!hasEnemyDest) return;
+    let threshold=side==='attacker'?getUnitAtk(u):u.def;
+    if(u.id==='infantry'&&side==='attacker'){
+      if(artBonusLeft>0&&infBonused<infCount){threshold=2;artBonusLeft--;infBonused++;}
+      else threshold=1;
+    } else if(u.id==='mech_infantry'&&side==='attacker'){
+      if(artBonusLeft>0&&mechBonused<mechCount){threshold=2;artBonusLeft--;mechBonused++;}
+      else if(tacPairsLeft>0){threshold=4;tacPairsLeft--;}
+      else threshold=1;
+    } else if(u.id==='tac_bomber'&&side==='attacker'){
+      if(tacPairsLeft>0){threshold=4;tacPairsLeft--;}
+      else threshold=3;
+    }
+    if(threshold<=0) return;
+    const roll=rollDie();
+    rolls.push({inst,roll,threshold,hit:roll<=threshold,unitId:u.id});
+  });
+  return rolls;
+}
+
+// ==================== VICTORY / SIM RESULTS ====================
+function showVictory(msg){
+  const overlay=document.getElementById('victoryOverlay');
+  const atkIPC=getTotalIPC('attacker');
+  const defIPC=getTotalIPC('defender');
+  overlay.innerHTML=`<div class="popup-box">
+    <h2>${msg}</h2>
+    <div class="stripe"></div>
+    <p>Battle completed in <strong>${state.battleRound-1}</strong> round(s)</p>
+    <p>Attacker IPC lost: <strong>${atkIPC}</strong> | Defender IPC lost: <strong>${defIPC}</strong></p>
+    <div class="stripe"></div>
+    <button class="btn btn-primary" onclick="closeVictory()">Close</button>
+    <button class="btn btn-secondary" onclick="newBattle()">New Battle</button>
+  </div>`;
+  overlay.classList.remove('hidden');
+}
+
+function getTotalIPC(side){
+  const losses=side==='attacker'?state.attackerLosses:state.defenderLosses;
+  return Object.entries(losses).reduce((sum,[uid,cnt])=>{
+    const u=ALL_UNITS.find(x=>x.id===uid);return sum+(u?u.cost*cnt:0);
+  },0);
+}
+
+function closeVictory(){document.getElementById('victoryOverlay').classList.add('hidden');}
+
+function showSimResults(atkW,defW,draws,N,avgR,avgAtkIPC,avgDefIPC){
+  const overlay=document.getElementById('simResultsOverlay');
+  overlay.innerHTML=`<div class="popup-box">
+    <h2>Simulation Results</h2>
+    <p>${N} battles simulated</p>
+    <table class="result-table">
+      <tr><th>Outcome</th><th>Count</th><th>%</th></tr>
+      <tr><td>Attacker Wins</td><td>${atkW}</td><td>${(atkW/N*100).toFixed(1)}%</td></tr>
+      <tr><td>Defender Wins</td><td>${defW}</td><td>${(defW/N*100).toFixed(1)}%</td></tr>
+      <tr><td>Draw</td><td>${draws}</td><td>${(draws/N*100).toFixed(1)}%</td></tr>
+    </table>
+    <table class="result-table" style="margin-top:8px">
+      <tr><th>Stat</th><th>Value</th></tr>
+      <tr><td>Avg Rounds</td><td>${avgR}</td></tr>
+      <tr><td>Avg Attacker IPC Lost</td><td>${avgAtkIPC}</td></tr>
+      <tr><td>Avg Defender IPC Lost</td><td>${avgDefIPC}</td></tr>
+    </table>
+    <div class="stripe"></div>
+    <button class="btn btn-primary" onclick="document.getElementById('simResultsOverlay').classList.add('hidden')">Close</button>
+  </div>`;
+  overlay.classList.remove('hidden');
+}
+
+// ==================== NEW BATTLE / CLEAR ====================
+function newBattle(){
+  state.battleRound=1;
+  state.attackerLosses={};
+  state.defenderLosses={};
+  document.getElementById('roundDisplay').textContent='ROUND 1';
+  document.getElementById('battleLog').innerHTML='';
+  document.getElementById('diceResultsArea').classList.add('hidden');
+  document.getElementById('diceResultsArea').innerHTML='';
+  document.getElementById('victoryOverlay').classList.add('hidden');
+  document.getElementById('casualtyOverlay').classList.add('hidden');
+  renderLosses('attacker');
+  renderLosses('defender');
+  updateExpected();
+  document.getElementById('rollBtn').disabled=false;
+  document.getElementById('autoBattleBtn').disabled=false;
+  logMsg('New battle started. Units retained.','round-header');
+}
+
+function clearAll(){
+  const units=getEditionUnits();
+  units.forEach(u=>{
+    state.attackerCounts[u.id]=0;
+    state.defenderCounts[u.id]=0;
+    document.getElementById(`cnt_attacker_${u.id}`).textContent='0';
+    document.getElementById(`cnt_defender_${u.id}`).textContent='0';
+  });
+  newBattle();
+  logMsg('All units cleared.','miss-line');
+}
+
+// ==================== START ====================
+init();
+</script>
+</body>
+</html>
